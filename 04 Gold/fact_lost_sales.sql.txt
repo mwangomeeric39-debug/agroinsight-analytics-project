@@ -1,0 +1,9 @@
+CREATE OR REPLACE TABLE mavuno_catalog.gold.fact_lost_sales AS
+
+SELECT lost_date, 
+branch_id, 
+product_id, 
+units_lost,
+units_lost * est_unit_price AS lost_revenue
+
+FROM mavuno_catalog.silver.stg_lost_sales

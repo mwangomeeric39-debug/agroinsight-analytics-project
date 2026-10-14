@@ -1,0 +1,4 @@
+CREATE OR REPLACE TABLE mavuno_catalog.gold.fact_stock_weekly AS
+
+SELECT *
+FROM mavuno_catalog.silver.stg_stock_weekly;

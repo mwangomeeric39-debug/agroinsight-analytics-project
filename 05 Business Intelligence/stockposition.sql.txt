@@ -1,0 +1,77 @@
+CREATE OR REPLACE TABLE mavuno_catalog.business_intelligence.stock_position AS
+WITH asof AS (
+    SELECT MAX(sale_date) AS d
+    FROM mavuno_catalog.silver.stg_sales),
+grid AS (
+    SELECT
+        b.branch_id,
+        p.product_id,
+        p.supplier_id
+    FROM mavuno_catalog.silver.stg_branch b
+    CROSS JOIN mavuno_catalog.silver.stg_product p),
+onhand AS (
+    SELECT
+        branch_id,
+        product_id,
+        SUM(qty_on_hand) AS qty_on_hand,
+        SUM(qty_on_hand * unit_cost) AS stock_value
+    FROM mavuno_catalog.silver.stg_batch_stock_current
+    GROUP BY branch_id, product_id),
+demand AS (
+    SELECT
+        s.branch_id,
+        s.product_id,
+        SUM(s.quantity) / 28.0 AS avg_daily_units
+    FROM mavuno_catalog.silver.stg_sales s
+    CROSS JOIN asof a
+    WHERE s.sale_date > DATE_SUB(a.d, 28)
+    GROUP BY s.branch_id, s.product_id),
+inbound AS (
+    SELECT
+        u.branch_id,
+        u.product_id,
+        SUM(u.quantity) AS qty_inbound,
+        MIN(u.receipt_date) AS next_arrival
+    FROM mavuno_catalog.silver.stg_purchases u
+    CROSS JOIN asof a
+    WHERE u.receipt_date > a.d
+    GROUP BY u.branch_id, u.product_id),
+joined AS (
+    SELECT
+        g.branch_id,
+        g.product_id,
+        COALESCE(o.qty_on_hand, 0) AS qty_on_hand,
+        COALESCE(o.stock_value, 0) AS stock_value,
+        COALESCE(d.avg_daily_units, 0) AS avg_daily_units,
+        COALESCE(i.qty_inbound, 0) AS qty_inbound,
+        i.next_arrival,
+        sup.lead_time_max_days AS lead_time_days
+    FROM grid g
+    LEFT JOIN onhand o
+        ON g.branch_id = o.branch_id
+        AND g.product_id = o.product_id
+    LEFT JOIN demand d
+        ON g.branch_id = d.branch_id
+        AND g.product_id = d.product_id
+    LEFT JOIN inbound i
+        ON g.branch_id = i.branch_id
+        AND g.product_id = i.product_id
+    LEFT JOIN mavuno_catalog.silver.stg_supplier sup
+        ON g.supplier_id = sup.supplier_id)
+SELECT *,
+    CASE
+        WHEN avg_daily_units = 0 THEN NULL
+        ELSE ROUND(qty_on_hand / avg_daily_units, 1)
+    END AS days_of_cover,
+    CASE
+        WHEN qty_on_hand = 0 AND avg_daily_units > 0
+            THEN 'Stocked out'
+        WHEN avg_daily_units > 0
+            AND qty_on_hand / avg_daily_units < lead_time_days
+            THEN 'Stockout risk'
+        WHEN avg_daily_units > 0
+            AND qty_on_hand / avg_daily_units > 90
+            THEN 'Overstock'
+        ELSE 'Healthy'
+    END AS stock_status
+FROM joined;

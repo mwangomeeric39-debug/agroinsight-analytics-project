@@ -1,0 +1,42 @@
+CREATE OR REPLACE TABLE mavuno_catalog.silver.stg_purchases AS
+
+SELECT
+    TRIM(p.purchase_id) AS purchase_id,
+    TRY_CAST(p.order_date AS DATE) AS order_date,
+    TRY_CAST(p.receipt_date AS DATE) AS receipt_date,
+    TRIM(p.branch_id) AS branch_id,
+    TRIM(p.product_id) AS product_id,
+    TRIM(p.supplier_id) AS supplier_id,
+    TRIM(p.batch_id) AS batch_id,
+    TRY_CAST(p.quantity AS INT) AS quantity,
+    TRY_CAST(p.unit_cost AS DECIMAL(18,2)) AS unit_cost,
+    TRY_CAST(p.expiry_date AS DATE) AS expiry_date
+
+FROM mavuno_catalog.bronze.purchases p
+
+LEFT JOIN mavuno_catalog.silver.stg_branch b
+    ON TRIM(p.branch_id) = b.branch_id
+
+LEFT JOIN mavuno_catalog.silver.stg_product pr
+    ON TRIM(p.product_id) = pr.product_id
+
+LEFT JOIN mavuno_catalog.silver.stg_supplier s
+    ON TRIM(p.supplier_id) = s.supplier_id
+
+WHERE TRIM(p.purchase_id) IS NOT NULL
+    AND TRIM(p.purchase_id) != ''
+    AND TRY_CAST(p.quantity AS INT) > 0
+    AND TRY_CAST(p.unit_cost AS DECIMAL(18,2)) > 0
+    AND (
+        TRY_CAST(p.receipt_date AS DATE) IS NULL
+        OR TRY_CAST(p.order_date AS DATE) IS NULL
+        OR TRY_CAST(p.receipt_date AS DATE) >= TRY_CAST(p.order_date AS DATE)
+    )
+    AND TRY_CAST(p.expiry_date AS DATE) IS NOT NULL
+    AND (
+        TRY_CAST(p.receipt_date AS DATE) IS NULL
+        OR TRY_CAST(p.expiry_date AS DATE) > TRY_CAST(p.receipt_date AS DATE)
+    )
+    AND b.branch_id IS NOT NULL
+    AND pr.product_id IS NOT NULL
+    AND s.supplier_id IS NOT NULL;

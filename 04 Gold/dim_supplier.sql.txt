@@ -1,0 +1,3 @@
+create or replace table mavuno_catalog.gold.dim_suppliers as 
+
+select * from mavuno_catalog.silver.stg_supplier

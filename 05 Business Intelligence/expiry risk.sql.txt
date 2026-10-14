@@ -1,0 +1,27 @@
+CREATE OR REPLACE TABLE mavuno_catalog.business_intelligence.expiry_risk AS
+WITH asof AS (
+    SELECT MAX(sale_date) AS d
+    FROM mavuno_catalog.silver.stg_sales
+),
+b AS (
+    SELECT
+        x.branch_id,
+        x.product_id,
+        x.batch_id,
+        x.qty_on_hand,
+        x.unit_cost,
+        x.expiry_date,
+        x.qty_on_hand * x.unit_cost AS value_at_cost,
+        DATEDIFF(x.expiry_date, a.d) AS days_to_expiry
+    FROM mavuno_catalog.silver.stg_batch_stock_current x
+    CROSS JOIN asof a
+)
+SELECT *,
+    CASE
+        WHEN days_to_expiry <= 0 THEN 'Expired'
+        WHEN days_to_expiry <= 30 THEN '0-30 days'
+        WHEN days_to_expiry <= 60 THEN '31-60 days'
+        WHEN days_to_expiry <= 90 THEN '61-90 days'
+        ELSE '90+ days'
+    END AS expiry_bucket
+FROM b;

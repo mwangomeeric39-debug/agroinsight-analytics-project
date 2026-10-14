@@ -1,0 +1,11 @@
+CREATE OR REPLACE TABLE mavuno_catalog.gold.fact_writeoffs AS
+
+SELECT writeoff_date, 
+branch_id, 
+product_id, 
+batch_id, 
+quantity,
+quantity * unit_cost AS writeoff_value, 
+reason
+
+FROM mavuno_catalog.silver.stg_writeoffs

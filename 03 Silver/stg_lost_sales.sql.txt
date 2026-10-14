@@ -1,0 +1,19 @@
+CREATE OR REPLACE TABLE mavuno_catalog.silver.stg_lost_sales AS
+
+SELECT
+    TRY_CAST(l.lost_date AS DATE) AS lost_date,
+    TRIM(l.branch_id) AS branch_id,
+    TRIM(l.product_id) AS product_id,
+    TRY_CAST(l.units_lost AS INT) AS units_lost,
+    TRY_CAST(l.est_unit_price AS DECIMAL(18,2)) AS est_unit_price
+
+FROM mavuno_catalog.bronze.lost_sales l
+LEFT JOIN mavuno_catalog.silver.stg_branch b
+    ON TRIM(l.branch_id) = b.branch_id
+LEFT JOIN mavuno_catalog.silver.stg_product p
+    ON TRIM(l.product_id) = p.product_id
+WHERE TRY_CAST(l.lost_date AS DATE) IS NOT NULL
+    AND TRY_CAST(l.units_lost AS INT) > 0
+    AND TRY_CAST(l.est_unit_price AS DECIMAL(18,2)) > 0
+    AND b.branch_id IS NOT NULL
+    AND p.product_id IS NOT NULL;

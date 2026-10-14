@@ -1,0 +1,5 @@
+create or replace table mavuno_catalog.gold.dim_farmer as 
+
+select * from mavuno_catalog.silver.stg_farmer
+union all
+select 'WALK-IN',Null, 'Walk-in', Null, Null, 0, Null

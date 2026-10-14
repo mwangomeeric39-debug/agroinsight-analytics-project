@@ -1,0 +1,22 @@
+CREATE OR REPLACE TABLE mavuno_catalog.silver.stg_batch_stock_current AS
+
+SELECT
+    TRY_CAST(s.as_of_date AS DATE) AS as_of_date,
+    TRIM(s.branch_id) AS branch_id,
+    TRIM(s.product_id) AS product_id,
+    TRIM(s.batch_id) AS batch_id,
+    TRY_CAST(s.qty_on_hand AS INT) AS qty_on_hand,
+    TRY_CAST(s.unit_cost AS DECIMAL(18,2)) AS unit_cost,
+    TRY_CAST(s.expiry_date AS DATE) AS expiry_date
+
+FROM mavuno_catalog.bronze.batch_stock_current s
+LEFT JOIN mavuno_catalog.silver.stg_branch b
+    ON TRIM(s.branch_id) = b.branch_id
+LEFT JOIN mavuno_catalog.silver.stg_product p
+    ON TRIM(s.product_id) = p.product_id
+WHERE TRIM(s.batch_id) IS NOT NULL
+    AND TRIM(s.batch_id) != ''
+    AND TRY_CAST(s.expiry_date AS DATE) IS NOT NULL
+    AND TRY_CAST(s.qty_on_hand AS INT) >= 0
+    AND b.branch_id IS NOT NULL
+    AND p.product_id IS NOT NULL;

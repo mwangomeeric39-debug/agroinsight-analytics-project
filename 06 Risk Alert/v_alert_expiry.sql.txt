@@ -1,0 +1,16 @@
+CREATE OR REPLACE VIEW mavuno_catalog.business_intelligence.v_alert_expiry AS
+SELECT
+    b.branch_name,
+    p.product_name,
+    e.batch_id,
+    e.qty_on_hand,
+    ROUND(e.value_at_cost) AS value_at_cost,
+    e.expiry_date,
+    e.days_to_expiry,
+    e.expiry_bucket
+FROM mavuno_catalog.business_intelligence.expiry_risk e
+JOIN mavuno_catalog.silver.stg_branch b
+    ON e.branch_id = b.branch_id
+JOIN mavuno_catalog.silver.stg_product p
+    ON e.product_id = p.product_id
+WHERE e.days_to_expiry <= 90;

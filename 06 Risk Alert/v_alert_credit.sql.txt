@@ -1,0 +1,15 @@
+CREATE OR REPLACE VIEW mavuno_catalog.business_intelligence.v_alert_credit AS
+SELECT
+    b.branch_name,
+    c.farmer_id,
+    c.segment,
+    ROUND(c.outstanding) AS outstanding,
+    ROUND(c.overdue_60_plus) AS overdue_60_plus,
+    c.max_days_past_due,
+    c.limit_utilisation,
+    c.risk_tier
+FROM mavuno_catalog.business_intelligence.farmer_credit_score c
+JOIN mavuno_catalog.silver.stg_branch b
+    ON c.branch_id = b.branch_id
+WHERE c.risk_tier = 'High'
+  AND c.overdue_60_plus > 0;

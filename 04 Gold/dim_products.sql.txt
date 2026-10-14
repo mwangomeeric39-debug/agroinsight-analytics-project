@@ -1,0 +1,2 @@
+create or replace table mavuno_catalog.gold.dim_products as 
+select * from mavuno_catalog.silver.stg_product

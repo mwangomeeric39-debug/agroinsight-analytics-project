@@ -1,0 +1,6 @@
+supplier_id,supplier_name,lead_time_min_days,lead_time_max_days
+S01,Fertilizer Importer Ltd,7,14
+S02,Certified Seed Company,4,8
+S03,Agrochemical Distributors,5,10
+S04,Animal Health Wholesale,4,9
+S05,General Farm Supplies,3,7

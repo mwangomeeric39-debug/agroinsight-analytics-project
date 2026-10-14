@@ -1,0 +1,8 @@
+create or replace table mavuno_catalog.silver.stg_branch as 
+
+select trim(branch_id) as branch_id,
+initcap(trim(branch_name)) as branch_name,
+initcap(trim(county)) as county
+from mavuno_catalog.bronze.branch
+
+where trim(branch_id)  Is NOT null AND trim(branch_id) !=''

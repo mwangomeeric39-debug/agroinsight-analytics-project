@@ -1,0 +1,14 @@
+create or replace table mavuno_catalog.silver.stg_supplier as
+
+select 
+trim(supplier_id) as supplier_id,
+trim(supplier_name) as Supplier_name,
+try_cast(lead_time_min_days as INT) as lead_time_min_days,
+try_cast(lead_time_max_days as INT) as lead_time_max_days
+
+from mavuno_catalog.bronze.supplier
+
+where trim(supplier_id) is not null 
+And trim(supplier_id) !=''
+And try_cast(lead_time_min_days as INT)>0
+And try_cast(lead_time_max_days as INT)>= try_cast(lead_time_min_days as INT)

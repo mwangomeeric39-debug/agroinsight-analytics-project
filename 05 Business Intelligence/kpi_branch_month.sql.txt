@@ -1,0 +1,67 @@
+CREATE OR REPLACE TABLE mavuno_catalog.business_intelligence.kpi_branch_month AS
+SELECT
+    month_start,
+    branch_id,
+    SUM(revenue) AS revenue,
+    SUM(gross_profit) AS gross_profit,
+    SUM(credit_sales) AS credit_sales,
+    SUM(credit_collected) AS credit_collected,
+    SUM(lost_revenue) AS lost_revenue,
+    SUM(writeoff_value) AS writeoff_value
+FROM (
+    SELECT
+        TRUNC(sale_date, 'MM') AS month_start,
+        branch_id,
+        revenue,
+        gross_profit,
+        CASE
+            WHEN payment_type = 'Credit' THEN revenue
+            ELSE 0
+        END AS credit_sales,
+        0 AS credit_collected,
+        0 AS lost_revenue,
+        0 AS writeoff_value
+    FROM mavuno_catalog.silver.stg_sales
+
+    UNION ALL
+
+    SELECT
+        TRUNC(p.payment_date, 'MM') AS month_start,
+        s.branch_id,
+        0 AS revenue,
+        0 AS gross_profit,
+        0 AS credit_sales,
+        p.amount AS credit_collected,
+        0 AS lost_revenue,
+        0 AS writeoff_value
+    FROM mavuno_catalog.silver.stg_credit_payments p
+    JOIN mavuno_catalog.silver.stg_sales s
+        ON p.sale_line_id = s.sale_line_id
+
+    UNION ALL
+
+    SELECT
+        TRUNC(lost_date, 'MM') AS month_start,
+        branch_id,
+        0 AS revenue,
+        0 AS gross_profit,
+        0 AS credit_sales,
+        0 AS credit_collected,
+        lost_revenue,
+        0 AS writeoff_value
+    FROM mavuno_catalog.gold.fact_lost_sales
+
+    UNION ALL
+
+    SELECT
+        TRUNC(writeoff_date, 'MM') AS month_start,
+        branch_id,
+        0 AS revenue,
+        0 AS gross_profit,
+        0 AS credit_sales,
+        0 AS credit_collected,
+        0 AS lost_revenue,
+        writeoff_value
+    FROM mavuno_catalog.gold.fact_writeoffs
+) u
+GROUP BY month_start, branch_id;

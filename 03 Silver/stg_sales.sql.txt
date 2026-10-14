@@ -1,0 +1,69 @@
+CREATE OR REPLACE TABLE mavuno_catalog.silver.stg_sales AS
+
+SELECT
+    TRIM(s.sale_line_id) AS sale_line_id,
+    TRY_CAST(s.sale_date AS DATE) AS sale_date,
+    TRIM(s.branch_id) AS branch_id,
+    TRIM(s.product_id) AS product_id,
+    COALESCE(NULLIF(TRIM(s.farmer_id), ''), 'WALK-IN') AS farmer_id,
+
+    TRY_CAST(s.quantity AS INT) AS quantity,
+    TRY_CAST(s.unit_price AS DECIMAL(18,2)) AS unit_price,
+    TRY_CAST(s.unit_cost AS DECIMAL(18,2)) AS unit_cost,
+
+    CASE LOWER(TRIM(s.payment_type))
+        WHEN 'mpesa' THEN 'M-Pesa'
+        WHEN 'm-pesa' THEN 'M-Pesa'
+        WHEN 'cash' THEN 'Cash'
+        WHEN 'credit' THEN 'Credit'
+        ELSE 'Unknown'
+    END AS payment_type,
+
+    CASE
+        WHEN LOWER(TRIM(s.payment_type)) = 'credit'
+        THEN TRY_CAST(s.due_date AS DATE)
+    END AS due_date,
+
+    ROUND(
+        TRY_CAST(s.quantity AS INT) *
+        TRY_CAST(s.unit_price AS DECIMAL(18,2)), 2
+    ) AS revenue,
+
+    ROUND(
+        TRY_CAST(s.quantity AS INT) *
+        TRY_CAST(s.unit_cost AS DECIMAL(18,2)), 2
+    ) AS cogs,
+
+    ROUND(
+        TRY_CAST(s.quantity AS INT) *
+        TRY_CAST(s.unit_price AS DECIMAL(18,2)), 2
+    ) -
+    ROUND(
+        TRY_CAST(s.quantity AS INT) *
+        TRY_CAST(s.unit_cost AS DECIMAL(18,2)), 2
+    ) AS gross_profit
+
+FROM mavuno_catalog.bronze.sales s
+
+LEFT JOIN mavuno_catalog.silver.stg_branch b
+    ON TRIM(s.branch_id) = b.branch_id
+
+LEFT JOIN mavuno_catalog.silver.stg_product p
+    ON TRIM(s.product_id) = p.product_id
+
+LEFT JOIN mavuno_catalog.silver.stg_farmer f
+    ON COALESCE(NULLIF(TRIM(s.farmer_id), ''), 'WALK-IN') = f.farmer_id
+
+WHERE TRIM(s.sale_line_id) IS NOT NULL
+    AND TRIM(s.sale_line_id) != ''
+    AND TRY_CAST(s.sale_date AS DATE) IS NOT NULL
+    AND TRY_CAST(s.quantity AS INT) > 0
+    AND TRY_CAST(s.unit_price AS DECIMAL(18,2)) > 0
+    AND TRY_CAST(s.unit_cost AS DECIMAL(18,2)) >= 0
+    AND LOWER(TRIM(s.payment_type)) IN ('mpesa', 'm-pesa', 'cash', 'credit')
+    AND (LOWER(TRIM(s.payment_type)) != 'credit'
+        OR TRY_CAST(s.due_date AS DATE) IS NOT NULL)
+    AND b.branch_id IS NOT NULL
+    AND p.product_id IS NOT NULL
+    AND (COALESCE(NULLIF(TRIM(s.farmer_id), ''), 'WALK-IN') = 'WALK-IN'
+        OR f.farmer_id IS NOT NULL);

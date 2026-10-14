@@ -1,0 +1,35 @@
+CREATE OR REPLACE TABLE mavuno_catalog.gold.fact_receivables AS
+WITH asof AS (
+    SELECT MAX(sale_date) AS d
+    FROM mavuno_catalog.silver.stg_sales
+),
+paid AS (
+    SELECT sale_line_id, SUM(amount) AS paid_amount,
+           MAX(payment_date) AS last_payment_date
+    FROM mavuno_catalog.silver.stg_credit_payments
+    GROUP BY sale_line_id
+),
+base AS (
+    SELECT s.sale_line_id, s.farmer_id, s.branch_id, s.product_id,
+           s.sale_date, s.due_date, s.revenue AS invoice_amount,
+           COALESCE(p.paid_amount, 0) AS paid_amount,
+           s.revenue - COALESCE(p.paid_amount, 0) AS outstanding,
+           p.last_payment_date,
+           DATEDIFF(a.d, s.due_date) AS days_overdue_raw
+    FROM mavuno_catalog.silver.stg_sales s
+    CROSS JOIN asof a
+    LEFT JOIN paid p ON s.sale_line_id = p.sale_line_id
+    WHERE s.payment_type = 'Credit'
+)
+SELECT sale_line_id, farmer_id, branch_id, product_id, sale_date,
+       due_date, invoice_amount, paid_amount, outstanding,
+       last_payment_date, GREATEST(days_overdue_raw, 0) AS days_past_due,
+       CASE
+           WHEN outstanding <= 1 THEN 'Settled'
+           WHEN days_overdue_raw <= 0 THEN 'Not yet due'
+           WHEN days_overdue_raw <= 30 THEN '1-30 days'
+           WHEN days_overdue_raw <= 60 THEN '31-60 days'
+           WHEN days_overdue_raw <= 90 THEN '61-90 days'
+           ELSE '90+ days'
+       END AS aging_bucket
+FROM base;

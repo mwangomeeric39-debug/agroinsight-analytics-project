@@ -1,0 +1,17 @@
+CREATE OR REPLACE VIEW mavuno_catalog.business_intelligence.v_alert_stock AS
+SELECT
+    b.branch_name,
+    p.product_name,
+    p.category,
+    s.qty_on_hand,
+    s.days_of_cover,
+    s.lead_time_days,
+    s.qty_inbound,
+    s.next_arrival,
+    s.stock_status
+FROM mavuno_catalog.gold.stock_position s
+JOIN mavuno_catalog.silver.stg_branch b
+    ON s.branch_id = b.branch_id
+JOIN mavuno_catalog.silver.stg_product p
+    ON s.product_id = p.product_id
+WHERE s.stock_status IN ('Stocked out', 'Stockout risk')

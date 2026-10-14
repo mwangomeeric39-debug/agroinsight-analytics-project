@@ -1,0 +1,24 @@
+%sql
+CREATE OR REPLACE TABLE mavuno_catalog.silver.stg_product AS
+
+SELECT
+    TRIM(p.product_id) AS product_id,
+    TRIM(p.product_name) AS product_name,
+    TRIM(p.category) AS category,
+    TRIM(p.unit) AS unit,
+    TRY_CAST(p.list_cost AS DECIMAL(18,2)) AS list_cost,
+    TRY_CAST(p.shelf_life_months AS INT) AS shelf_life_months,
+    TRIM(p.supplier_id) AS supplier_id
+
+FROM mavuno_catalog.bronze.products p
+
+LEFT JOIN mavuno_catalog.silver.stg_supplier s
+    ON TRIM(p.supplier_id) = s.supplier_id
+
+WHERE TRIM(p.product_id) IS NOT NULL
+    AND TRIM(p.product_id) != ''
+    AND TRIM(p.category) IS NOT NULL
+    AND TRIM(p.category) != ''
+    AND TRY_CAST(p.list_cost AS DECIMAL(18,2)) > 0
+    AND TRY_CAST(p.shelf_life_months AS INT) > 0
+    AND s.supplier_id IS NOT NULL;

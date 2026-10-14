@@ -1,0 +1,29 @@
+%sql
+CREATE OR REPLACE TABLE mavuno_catalog.silver.stg_farmer AS
+
+SELECT
+    TRIM(f.farmer_id) AS farmer_id,
+    TRIM(f.branch_id) AS branch_id,
+
+    CASE
+        WHEN INITCAP(TRIM(f.segment)) IN
+            ('Smallholder', 'Medium', 'Commercial', 'Cooperative')
+        THEN INITCAP(TRIM(f.segment))
+        ELSE 'Unknown'
+    END AS segment,
+
+    CASE
+        WHEN TRY_CAST(f.farm_size_acres AS DOUBLE) > 0
+        THEN TRY_CAST(f.farm_size_acres AS DOUBLE)
+    END AS farm_size_acres,
+
+    TRIM(f.main_crop) AS main_crop,
+    GREATEST(COALESCE(TRY_CAST(f.credit_limit AS INT), 0), 0) AS credit_limit,
+    TRY_CAST(f.registered_date AS DATE) AS registered_date
+FROM mavuno_catalog.bronze.farmers f
+LEFT JOIN mavuno_catalog.silver.stg_branch b
+    ON TRIM(f.branch_id) = b.branch_id
+
+WHERE TRIM(f.farmer_id) IS NOT NULL
+    AND TRIM(f.farmer_id) != ''
+    AND b.branch_id IS NOT NULL;

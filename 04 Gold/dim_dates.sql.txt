@@ -1,0 +1,14 @@
+create or replace table mavuno_catalog.gold.dim_date as 
+
+select d as date_key,
+YEAR(d) as year,
+MONTH(d) as month_number,
+date_format(d,'MMM') as Month_name,
+date_format(d,'yyyy-MM') as Year_Month,
+quarter(d) as quarter,
+date_format(d, 'E') as Weekday,
+case when MONTH(d) in (2,3,4) then 'Long rains planting'
+when MONTH(d) in (8,9,10) then 'short rains planting'
+else 'off-peak' end as season
+from (
+select explode(sequence(date'2024-10-01', date'2027-12-31', interval 1 day))as d)

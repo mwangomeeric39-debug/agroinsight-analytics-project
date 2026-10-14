@@ -1,0 +1,20 @@
+CREATE OR REPLACE TABLE mavuno_catalog.silver.stg_credit_payments AS
+
+SELECT
+    TRIM(p.payment_id) AS payment_id,
+    TRIM(p.sale_line_id) AS sale_line_id,
+    TRIM(p.farmer_id) AS farmer_id,
+    TRY_CAST(p.payment_date AS DATE) AS payment_date,
+    TRY_CAST(p.amount AS DECIMAL(18,2)) AS amount,
+    TRIM(p.method) AS method
+
+FROM mavuno_catalog.bronze.credit_payments p
+
+LEFT JOIN mavuno_catalog.silver.stg_sales s
+    ON TRIM(p.sale_line_id) = s.sale_line_id
+
+WHERE TRIM(p.payment_id) IS NOT NULL
+    AND TRIM(p.payment_id) != ''
+    AND TRY_CAST(p.payment_date AS DATE) IS NOT NULL
+    AND TRY_CAST(p.amount AS DECIMAL(18,2)) > 0
+    AND s.sale_line_id IS NOT NULL;

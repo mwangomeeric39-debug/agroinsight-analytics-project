@@ -1,0 +1,48 @@
+CREATE OR REPLACE TABLE mavuno_catalog.business_intelligence.farmer_credit_score AS
+WITH r AS (
+    SELECT
+        farmer_id,
+        COUNT(*) AS credit_invoices,
+        SUM(invoice_amount) AS credit_taken,
+        SUM(paid_amount) AS credit_repaid,
+        SUM(outstanding) AS outstanding,
+        SUM(
+            CASE
+                WHEN aging_bucket IN ('61-90 days', '90+ days')
+                THEN outstanding
+                ELSE 0
+            END
+        ) AS overdue_60_plus,
+        MAX(days_past_due) AS max_days_past_due
+    FROM mavuno_catalog.gold.fact_receivables
+    GROUP BY farmer_id),
+scored AS (
+    SELECT
+        f.farmer_id,
+        f.branch_id,
+        f.segment,
+        f.credit_limit,
+        r.credit_invoices,
+        r.credit_taken,
+        r.credit_repaid,
+        r.outstanding,
+        r.overdue_60_plus,
+        r.max_days_past_due,
+        ROUND(r.credit_repaid / NULLIF(r.credit_taken, 0), 3)
+            AS repayment_ratio,
+        ROUND(r.overdue_60_plus / NULLIF(r.credit_taken, 0), 3)
+            AS overdue_ratio,
+        ROUND(r.outstanding / NULLIF(f.credit_limit, 0), 2)
+            AS limit_utilisation
+    FROM r
+    JOIN mavuno_catalog.silver.stg_farmer f
+        ON r.farmer_id = f.farmer_id)
+SELECT *,
+    CASE
+        WHEN overdue_ratio >= 0.25
+          OR limit_utilisation > 1 THEN 'High'
+        WHEN overdue_ratio >= 0.10
+          OR limit_utilisation >= 0.8 THEN 'Medium'
+        ELSE 'Low'
+    END AS risk_tier
+FROM scored;

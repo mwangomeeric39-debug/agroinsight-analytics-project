@@ -1,0 +1,22 @@
+%sql
+CREATE OR REPLACE TABLE mavuno_catalog.silver.stg_writeoffs AS
+
+SELECT
+    TRY_CAST(w.writeoff_date AS DATE) AS writeoff_date,
+    TRIM(w.branch_id) AS branch_id,
+    TRIM(w.product_id) AS product_id,
+    TRIM(w.batch_id) AS batch_id,
+    TRY_CAST(w.quantity AS INT) AS quantity,
+    TRY_CAST(w.unit_cost AS DECIMAL(18,2)) AS unit_cost,
+    TRIM(w.reason) AS reason
+    
+FROM mavuno_catalog.bronze.write_offs w
+LEFT JOIN mavuno_catalog.silver.stg_branch b
+    ON TRIM(w.branch_id) = b.branch_id
+LEFT JOIN mavuno_catalog.silver.stg_product p
+    ON TRIM(w.product_id) = p.product_id
+WHERE TRY_CAST(w.writeoff_date AS DATE) IS NOT NULL
+    AND TRY_CAST(w.quantity AS INT) > 0
+    AND TRY_CAST(w.unit_cost AS DECIMAL(18,2)) >= 0
+    AND b.branch_id IS NOT NULL
+    AND p.product_id IS NOT NULL;

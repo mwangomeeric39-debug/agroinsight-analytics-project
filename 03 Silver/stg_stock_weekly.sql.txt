@@ -1,0 +1,22 @@
+%sql
+CREATE OR REPLACE TABLE mavuno_catalog.silver.stg_stock_weekly AS
+
+SELECT
+    TRY_CAST(s.week_end_date AS DATE) AS week_end_date,
+    TRIM(s.branch_id) AS branch_id,
+    TRIM(s.product_id) AS product_id,
+    TRY_CAST(s.qty_on_hand AS INT) AS qty_on_hand,
+    TRY_CAST(s.stock_value_at_cost AS DECIMAL(18,2)) AS stock_value_at_cost
+
+FROM mavuno_catalog.bronze.stock_weekly s
+
+LEFT JOIN mavuno_catalog.silver.stg_branch b
+    ON TRIM(s.branch_id) = b.branch_id
+
+LEFT JOIN mavuno_catalog.silver.stg_product p
+    ON TRIM(s.product_id) = p.product_id
+
+WHERE TRY_CAST(s.week_end_date AS DATE) IS NOT NULL
+    AND TRY_CAST(s.qty_on_hand AS INT) >= 0
+    AND b.branch_id IS NOT NULL
+    AND p.product_id IS NOT NULL;

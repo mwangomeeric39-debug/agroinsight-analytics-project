@@ -1,0 +1,2 @@
+create or replace table mavuno_catalog.gold.dim_branches as
+select * from mavuno_catalog.silver.stg_branch

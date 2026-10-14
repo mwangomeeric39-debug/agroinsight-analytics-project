@@ -1,0 +1,27 @@
+product_id,product_name,category,unit,list_cost,shelf_life_months,supplier_id
+P01,DAP Fertilizer 50kg,Fertilizer,bag,6100,48,S01
+P02,CAN Fertilizer 50kg,Fertilizer,bag,3900,48,S01
+P03,Urea 50kg,Fertilizer,bag,4300,48,S01
+P04,NPK 23:23:0 50kg,Fertilizer,bag,6300,48,S01
+P05,NPK 17:17:17 50kg,Fertilizer,bag,6200,48,S01
+P06,Foliar Feed 1L,Fertilizer,bottle,650,36,S01
+P07,Hybrid Maize Seed 2kg,Seed,pack,640,12,S02
+P08,Hybrid Maize Seed 10kg,Seed,pack,3100,12,S02
+P09,Bean Seed 1kg,Seed,pack,260,12,S02
+P10,Sorghum Seed 1kg,Seed,pack,230,12,S02
+P11,Tomato Seed 10g,Seed,pack,480,18,S02
+P12,Kale Seed 100g,Seed,pack,180,18,S02
+P13,Sunflower Seed 1kg,Seed,pack,310,12,S02
+P14,Herbicide 1L,Agrochemical,bottle,780,24,S03
+P15,Fungicide 250g,Agrochemical,pack,560,24,S03
+P16,Insecticide 1L,Agrochemical,bottle,850,24,S03
+P17,Armyworm Pesticide 250ml,Agrochemical,bottle,640,24,S03
+P18,Pre-emergent Herbicide 1L,Agrochemical,bottle,720,24,S03
+P19,Acaricide 1L,Animal Health,bottle,950,24,S04
+P20,Dewormer 1L,Animal Health,bottle,1100,18,S04
+P21,Poultry Vaccine 100 doses,Animal Health,vial,400,8,S04
+P22,Dairy Meal 70kg,Animal Health,bag,2600,6,S04
+P23,Layers Mash 70kg,Animal Health,bag,3100,6,S04
+P24,Knapsack Sprayer 16L,Tools & Irrigation,unit,2400,120,S05
+P25,Drip Irrigation Kit,Tools & Irrigation,kit,4200,120,S05
+P26,Hand Hoe,Tools & Irrigation,unit,350,120,S05
